@@ -81,3 +81,16 @@ This is a personal note.
         1. **FetchAddressTaskの実装クラスであるMainActivityをFetchAddressTaskに渡してnewしたのってこれとほぼ同じことしてんだなと気づいた**
     3. 非同期が成功した場合に、最も確率が高いものをループで選定し、表示する。
     4. placeの情報を使ったら、bufferを解放する
+
+##### 3. locationからplace typeを取得する
+1. place nameとほぼ同じ
+
+#### 4. place-picker UIを追加する
+0. 前提
+    1. ユーザーが場所を選択できるUI
+    2. このUIはdialog
+    3. PlacePicker.IntentBuilderオブジェクトで専用のintentを作成
+1. 手順
+    1. PlacePicker.IntentBuilderでintentを作成し、startActivityForResultで起動する
+        1. ほぼこれだけ
+    2. onActivityResult()で選択されたplaceを取得し処理

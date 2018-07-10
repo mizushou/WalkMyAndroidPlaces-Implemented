@@ -18,6 +18,7 @@ package com.example.android.walkmyandroidplaces;
 import android.Manifest;
 import android.animation.AnimatorInflater;
 import android.animation.AnimatorSet;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 
 import android.os.Bundle;
@@ -31,6 +32,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
+import com.google.android.gms.common.GooglePlayServicesRepairableException;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -41,6 +44,7 @@ import com.google.android.gms.location.places.PlaceDetectionClient;
 import com.google.android.gms.location.places.PlaceLikelihood;
 import com.google.android.gms.location.places.PlaceLikelihoodBufferResponse;
 import com.google.android.gms.location.places.Places;
+import com.google.android.gms.location.places.ui.PlacePicker;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 
@@ -50,10 +54,12 @@ public class MainActivity extends AppCompatActivity implements FetchAddressTask.
 
   // Constants
   private static final int REQUEST_LOCATION_PERMISSION = 1;
+  private static final int REQUEST_PICK_PLACE = 2;
   private static final String TRACKING_LOCATION_KEY = "tracking_location";
 
   // Views
   private Button mLocationButton;
+  private Button mPickPlaceButton;
   private TextView mLocationTextView;
   private ImageView mAndroidImageView;
 
@@ -104,6 +110,22 @@ public class MainActivity extends AppCompatActivity implements FetchAddressTask.
               startTrackingLocation();
             } else {
               stopTrackingLocation();
+            }
+          }
+        });
+
+    // Set the listener for the pick place button.
+    mPickPlaceButton = findViewById(R.id.button_pick_place);
+    mPickPlaceButton.setOnClickListener(
+        new View.OnClickListener() {
+          @Override
+          public void onClick(View view) {
+            PlacePicker.IntentBuilder builder = new PlacePicker.IntentBuilder();
+            try {
+              startActivityForResult(builder.build(MainActivity.this), REQUEST_PICK_PLACE);
+            } catch (GooglePlayServicesRepairableException
+                | GooglePlayServicesNotAvailableException e) {
+              e.printStackTrace();
             }
           }
         });
@@ -185,6 +207,32 @@ public class MainActivity extends AppCompatActivity implements FetchAddressTask.
     return locationRequest;
   }
 
+  private void setAndroidType(Place currentPlace) {
+    int drawableID = -1;
+    for (Integer placeType : currentPlace.getPlaceTypes()) {
+      switch (placeType) {
+        case Place.TYPE_SCHOOL:
+          drawableID = R.drawable.android_school;
+          break;
+        case Place.TYPE_GYM:
+          drawableID = R.drawable.android_gym;
+          break;
+        case Place.TYPE_RESTAURANT:
+          drawableID = R.drawable.android_restaurant;
+          break;
+        case Place.TYPE_LIBRARY:
+          drawableID = R.drawable.android_library;
+          break;
+      }
+    }
+
+    if (drawableID < 0) {
+      drawableID = R.drawable.android_plain;
+    }
+
+    mAndroidImageView.setImageResource(drawableID);
+  }
+
   /** Saves the last location on configuration change */
   @Override
   protected void onSaveInstanceState(Bundle outState) {
@@ -240,6 +288,7 @@ public class MainActivity extends AppCompatActivity implements FetchAddressTask.
                   }
                 }
                 if (currentPlace != null) {
+                  setAndroidType(currentPlace);
                   mLocationTextView.setText(
                       getString(
                           R.string.address_text,
@@ -258,6 +307,24 @@ public class MainActivity extends AppCompatActivity implements FetchAddressTask.
               }
             }
           });
+    }
+  }
+
+  @Override
+  protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    if (requestCode == REQUEST_PICK_PLACE) {
+      if (resultCode == RESULT_OK) {
+        Place place = PlacePicker.getPlace(this, data);
+        setAndroidType(place);
+        mLocationTextView.setText(
+            getString(
+                R.string.address_text,
+                place.getName(),
+                place.getAddress(),
+                System.currentTimeMillis()));
+      } else {
+        mLocationTextView.setText(R.string.no_place);
+      }
     }
   }
 
